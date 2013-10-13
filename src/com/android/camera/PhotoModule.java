@@ -80,6 +80,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Formatter;
 import java.util.List;
+import java.util.TimeZone;
 
 public class PhotoModule
     implements CameraModule,
@@ -890,6 +891,14 @@ public class PhotoModule
                         exif.setTag(directionRefTag);
                         exif.setTag(directionTag);
                     }
+                    if (mLocation != null) {
+                        exif.addGpsTags(mLocation.getLatitude(), mLocation.getLongitude());
+                        exif.addGpsDateTimeStampTag(date);
+                        exif.setTag(exif.buildTag(ExifInterface.TAG_GPS_PROCESSING_METHOD,
+                                mLocation.getProvider()));
+                    }
+                    exif.addDateTimeStampTag(ExifInterface.TAG_DATE_TIME,
+                            date, TimeZone.getDefault());
 
                     if (isSamsungHDR) {
                         final long finalDate = date;
@@ -1512,13 +1521,9 @@ public class PhotoModule
     public void onConfigurationChanged(Configuration newConfig) {
         Log.v(TAG, "onConfigurationChanged");
 
-        // Wait for camera initialization
-        try {
-            if (mCameraStartUpThread != null) {
-                mCameraStartUpThread.join();
-            }
-        } catch (InterruptedException iex) {
-            // Ignore.
+        // Ignore until the hardware is started
+        if (mCameraStartUpThread != null) {
+            return;
         }
 
         setDisplayOrientation();
